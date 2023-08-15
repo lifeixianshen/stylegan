@@ -73,7 +73,7 @@ class Logger(object):
 
     def write(self, text: str) -> None:
         """Write text to stdout (and a file) and optionally flush."""
-        if len(text) == 0: # workaround for a bug in VSCode debugger: sys.stdout.write(''); sys.stdout.flush() => crash
+        if not text: # workaround for a bug in VSCode debugger: sys.stdout.write(''); sys.stdout.flush() => crash
             return
 
         if self.file is not None:
@@ -218,7 +218,9 @@ def get_module_from_obj_name(obj_name: str) -> Tuple[types.ModuleType, str]:
         try:
             importlib.import_module(module_name) # may raise ImportError
         except ImportError:
-            if not str(sys.exc_info()[1]).startswith("No module named '" + module_name + "'"):
+            if not str(sys.exc_info()[1]).startswith(
+                f"No module named '{module_name}'"
+            ):
                 raise
 
     # maybe the requested attribute is missing?
@@ -235,7 +237,7 @@ def get_module_from_obj_name(obj_name: str) -> Tuple[types.ModuleType, str]:
 
 def get_obj_from_module(module: types.ModuleType, obj_name: str) -> Any:
     """Traverses the object name and returns the last (rightmost) python object."""
-    if obj_name == '':
+    if not obj_name:
         return module
     obj = module
     for part in obj_name.split("."):
@@ -271,7 +273,7 @@ def is_top_level_function(obj: Any) -> bool:
 def get_top_level_function_name(obj: Any) -> str:
     """Return the fully-qualified name of a top-level function."""
     assert is_top_level_function(obj)
-    return obj.__module__ + "." + obj.__name__
+    return f"{obj.__module__}.{obj.__name__}"
 
 
 # File system helpers
@@ -328,14 +330,14 @@ def copy_files_and_create_dirs(files: List[Tuple[str, str]]) -> None:
 
 def is_url(obj: Any) -> bool:
     """Determine whether the given object is a valid URL string."""
-    if not isinstance(obj, str) or not "://" in obj:
+    if not isinstance(obj, str) or "://" not in obj:
         return False
     try:
         res = requests.compat.urlparse(obj)
-        if not res.scheme or not res.netloc or not "." in res.netloc:
+        if not res.scheme or not res.netloc or "." not in res.netloc:
             return False
         res = requests.compat.urlparse(requests.compat.urljoin(obj, "/"))
-        if not res.scheme or not res.netloc or not "." in res.netloc:
+        if not res.scheme or not res.netloc or "." not in res.netloc:
             return False
     except:
         return False
@@ -350,7 +352,7 @@ def open_url(url: str, cache_dir: str = None, num_attempts: int = 10, verbose: b
     # Lookup from cache.
     url_md5 = hashlib.md5(url.encode("utf-8")).hexdigest()
     if cache_dir is not None:
-        cache_files = glob.glob(os.path.join(cache_dir, url_md5 + "_*"))
+        cache_files = glob.glob(os.path.join(cache_dir, f"{url_md5}_*"))
         if len(cache_files) == 1:
             return open(cache_files[0], "rb")
 
@@ -359,7 +361,7 @@ def open_url(url: str, cache_dir: str = None, num_attempts: int = 10, verbose: b
     url_data = None
     with requests.Session() as session:
         if verbose:
-            print("Downloading %s ..." % url, end="", flush=True)
+            print(f"Downloading {url} ...", end="", flush=True)
         for attempts_left in reversed(range(num_attempts)):
             try:
                 with session.get(url) as res:
@@ -394,8 +396,10 @@ def open_url(url: str, cache_dir: str = None, num_attempts: int = 10, verbose: b
     # Save to cache.
     if cache_dir is not None:
         safe_name = re.sub(r"[^0-9a-zA-Z-._]", "_", url_name)
-        cache_file = os.path.join(cache_dir, url_md5 + "_" + safe_name)
-        temp_file = os.path.join(cache_dir, "tmp_" + uuid.uuid4().hex + "_" + url_md5 + "_" + safe_name)
+        cache_file = os.path.join(cache_dir, f"{url_md5}_{safe_name}")
+        temp_file = os.path.join(
+            cache_dir, f"tmp_{uuid.uuid4().hex}_{url_md5}_{safe_name}"
+        )
         os.makedirs(cache_dir, exist_ok=True)
         with open(temp_file, "wb") as f:
             f.write(url_data)

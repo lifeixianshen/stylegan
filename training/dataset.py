@@ -59,9 +59,9 @@ class TFRecordDataset:
         self._tf_minibatch_in   = None
         self._tf_labels_var     = None
         self._tf_labels_dataset = None
-        self._tf_datasets       = dict()
+        self._tf_datasets = {}
         self._tf_iterator       = None
-        self._tf_init_ops       = dict()
+        self._tf_init_ops = {}
         self._tf_minibatch_np   = None
         self._cur_minibatch     = -1
         self._cur_lod           = -1
@@ -230,7 +230,7 @@ def load_dataset(class_name='training.dataset.TFRecordDataset', data_dir=None, v
     if 'tfrecord_dir' in adjusted_kwargs and data_dir is not None:
         adjusted_kwargs['tfrecord_dir'] = os.path.join(data_dir, adjusted_kwargs['tfrecord_dir'])
     if verbose:
-        print('Streaming data using %s...' % class_name)
+        print(f'Streaming data using {class_name}...')
     dataset = dnnlib.util.get_obj_by_name(class_name)(**adjusted_kwargs)
     if verbose:
         print('Dataset shape =', np.int32(dataset.shape).tolist())

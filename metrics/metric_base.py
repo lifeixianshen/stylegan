@@ -63,7 +63,7 @@ class MetricBase:
         if log_results:
             result_str = self.get_result_str()
             if run_dir is not None:
-                log = os.path.join(run_dir, 'metric-%s.txt' % self.name)
+                log = os.path.join(run_dir, f'metric-{self.name}.txt')
                 with dnnlib.util.Logger(log, 'a'):
                     print(result_str)
             else:
@@ -72,17 +72,17 @@ class MetricBase:
     def get_result_str(self):
         network_name = os.path.splitext(os.path.basename(self._network_pkl))[0]
         if len(network_name) > 29:
-            network_name = '...' + network_name[-26:]
+            network_name = f'...{network_name[-26:]}'
         result_str = '%-30s' % network_name
         result_str += ' time %-12s' % dnnlib.util.format_time(self._eval_time)
         for res in self._results:
-            result_str += ' ' + self.name + res.suffix + ' '
+            result_str += f' {self.name}{res.suffix} '
             result_str += res.fmt % res.value
         return result_str
 
     def update_autosummaries(self):
         for res in self._results:
-            tflib.autosummary.autosummary('Metrics/' + self.name + res.suffix, res.value)
+            tflib.autosummary.autosummary(f'Metrics/{self.name}{res.suffix}', res.value)
 
     def _evaluate(self, Gs, num_gpus):
         raise NotImplementedError # to be overridden by subclasses
@@ -96,7 +96,10 @@ class MetricBase:
         all_args.update(kwargs)
         md5 = hashlib.md5(repr(sorted(all_args.items())).encode('utf-8'))
         dataset_name = self._dataset_args['tfrecord_dir'].replace('\\', '/').split('/')[-1]
-        return os.path.join(config.cache_dir, '%s-%s-%s.%s' % (md5.hexdigest(), self.name, dataset_name, extension))
+        return os.path.join(
+            config.cache_dir,
+            f'{md5.hexdigest()}-{self.name}-{dataset_name}.{extension}',
+        )
 
     def _iterate_reals(self, minibatch_size):
         dataset_obj = dataset.load_dataset(data_dir=config.data_dir, **self._dataset_args)
@@ -110,8 +113,14 @@ class MetricBase:
         while True:
             latents = np.random.randn(minibatch_size, *Gs.input_shape[1:])
             fmt = dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True)
-            images = Gs.run(latents, None, output_transform=fmt, is_validation=True, num_gpus=num_gpus, assume_frozen=True)
-            yield images
+            yield Gs.run(
+                latents,
+                None,
+                output_transform=fmt,
+                is_validation=True,
+                num_gpus=num_gpus,
+                assume_frozen=True,
+            )
 
 #----------------------------------------------------------------------------
 # Group of multiple metrics.

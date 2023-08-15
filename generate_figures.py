@@ -7,6 +7,7 @@
 
 """Minimal script for reproducing the figures of the StyleGAN paper using pre-trained generators."""
 
+
 import os
 import pickle
 import numpy as np
@@ -26,7 +27,7 @@ url_cats        = 'https://drive.google.com/uc?id=1MQywl0FNt6lHu8E_EUqnRbviagS7f
 
 synthesis_kwargs = dict(output_transform=dict(func=tflib.convert_images_to_uint8, nchw_to_nhwc=True), minibatch_size=8)
 
-_Gs_cache = dict()
+_Gs_cache = {}
 
 def load_Gs(url):
     if url not in _Gs_cache:

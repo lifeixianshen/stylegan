@@ -122,16 +122,13 @@ def get_path_from_template(path_template: str, path_type: PathType = PathType.AU
 
 def get_template_from_path(path: str) -> str:
     """Convert a normal path back to its template representation."""
-    # replace all path parts with the template tags
-    path = path.replace("\\", "/")
-    return path
+    return path.replace("\\", "/")
 
 
 def convert_path(path: str, path_type: PathType = PathType.AUTO) -> str:
     """Convert a normal path to template and the convert it back to a normal path with given path type."""
     path_template = get_template_from_path(path)
-    path = get_path_from_template(path_template, path_type)
-    return path
+    return get_path_from_template(path_template, path_type)
 
 
 def set_user_name_override(name: str) -> None:
@@ -161,7 +158,7 @@ def _create_run_dir_local(submit_config: SubmitConfig) -> str:
     run_dir_root = get_path_from_template(submit_config.run_dir_root, PathType.AUTO)
 
     if not os.path.exists(run_dir_root):
-        print("Creating the run dir root: {}".format(run_dir_root))
+        print(f"Creating the run dir root: {run_dir_root}")
         os.makedirs(run_dir_root)
 
     submit_config.run_id = _get_next_run_id_local(run_dir_root)
@@ -171,7 +168,7 @@ def _create_run_dir_local(submit_config: SubmitConfig) -> str:
     if os.path.exists(run_dir):
         raise RuntimeError("The run dir already exists! ({0})".format(run_dir))
 
-    print("Creating the run dir: {}".format(run_dir))
+    print(f"Creating the run dir: {run_dir}")
     os.makedirs(run_dir)
 
     return run_dir
@@ -244,12 +241,11 @@ def run_wrapper(submit_config: SubmitConfig) -> None:
     except:
         if is_local:
             raise
-        else:
-            traceback.print_exc()
+        traceback.print_exc()
 
-            log_src = os.path.join(submit_config.run_dir, "log.txt")
-            log_dst = os.path.join(get_path_from_template(submit_config.run_dir_root), "{0}-error.txt".format(submit_config.run_name))
-            shutil.copyfile(log_src, log_dst)
+        log_src = os.path.join(submit_config.run_dir, "log.txt")
+        log_dst = os.path.join(get_path_from_template(submit_config.run_dir_root), "{0}-error.txt".format(submit_config.run_name))
+        shutil.copyfile(log_src, log_dst)
     finally:
         open(os.path.join(submit_config.run_dir, "_finished.txt"), "w").close()
 

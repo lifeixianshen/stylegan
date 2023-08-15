@@ -175,7 +175,7 @@ def upscale2d_conv2d(x, fmaps, kernel, fused_scale='auto', **kwargs):
     assert kernel >= 1 and kernel % 2 == 1
     assert fused_scale in [True, False, 'auto']
     if fused_scale == 'auto':
-        fused_scale = min(x.shape[2:]) * 2 >= 128
+        fused_scale = min(x.shape[2:]) >= 64
 
     # Not fused => call the individual ops directly.
     if not fused_scale:
@@ -213,9 +213,7 @@ def conv2d_downscale2d(x, fmaps, kernel, fused_scale='auto', **kwargs):
 def apply_bias(x, lrmul=1):
     b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros()) * lrmul
     b = tf.cast(b, x.dtype)
-    if len(x.shape) == 2:
-        return x + b
-    return x + tf.reshape(b, [1, -1, 1, 1])
+    return x + b if len(x.shape) == 2 else x + tf.reshape(b, [1, -1, 1, 1])
 
 #----------------------------------------------------------------------------
 # Leaky ReLU activation. More efficient than tf.nn.leaky_relu() and supports FP16.

@@ -87,7 +87,7 @@ class Optimizer:
         assert all(var.device == dev for var in trainable_vars)
 
         # Register device and compute gradients.
-        with tf.name_scope(self.id + "_grad"), tf.device(dev):
+        with (tf.name_scope(f"{self.id}_grad"), tf.device(dev)):
             if dev not in self._dev_opt:
                 opt_name = self.scope.replace("/", "_") + "_opt%d" % len(self._dev_opt)
                 assert callable(self.optimizer_class)
@@ -106,7 +106,7 @@ class Optimizer:
         self._updates_applied = True
         devices = list(self._dev_grads.keys())
         total_grads = sum(len(grads) for grads in self._dev_grads.values())
-        assert len(devices) >= 1 and total_grads >= 1
+        assert devices and total_grads >= 1
         ops = []
 
         with tfutil.absolute_name_scope(self.scope):
@@ -139,7 +139,7 @@ class Optimizer:
 
             # Apply updates separately on each device.
             for dev_idx, (dev, grads) in enumerate(dev_grads.items()):
-                with tf.name_scope("ApplyGrads%d" % dev_idx), tf.device(dev):
+                with (tf.name_scope("ApplyGrads%d" % dev_idx), tf.device(dev)):
                     # Scale gradients as needed.
                     if self.use_loss_scaling or total_grads > 1:
                         with tf.name_scope("Scale"):
@@ -167,11 +167,20 @@ class Optimizer:
                     # Report statistics on the last device.
                     if dev == devices[-1]:
                         with tf.name_scope("Statistics"):
-                            ops.append(autosummary.autosummary(self.id + "/learning_rate", self.learning_rate))
-                            ops.append(autosummary.autosummary(self.id + "/overflow_frequency", tf.where(grad_ok, 0, 1)))
-
+                            ops.extend(
+                                (
+                                    autosummary.autosummary(
+                                        f"{self.id}/learning_rate",
+                                        self.learning_rate,
+                                    ),
+                                    autosummary.autosummary(
+                                        f"{self.id}/overflow_frequency",
+                                        tf.where(grad_ok, 0, 1),
+                                    ),
+                                )
+                            )
                             if self.use_loss_scaling:
-                                ops.append(autosummary.autosummary(self.id + "/loss_scaling_log2", ls_var))
+                                ops.append(autosummary.autosummary(f"{self.id}/loss_scaling_log2", ls_var))
 
             # Initialize variables and group everything into a single op.
             self.reset_optimizer_state()
@@ -190,7 +199,7 @@ class Optimizer:
             return None
 
         if device not in self._dev_ls_var:
-            with tfutil.absolute_name_scope(self.scope + "/LossScalingVars"), tf.control_dependencies(None):
+            with (tfutil.absolute_name_scope(f"{self.scope}/LossScalingVars"), tf.control_dependencies(None)):
                 self._dev_ls_var[device] = tf.Variable(np.float32(self.loss_scaling_init), name="loss_scaling_var")
 
         return self._dev_ls_var[device]

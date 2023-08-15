@@ -60,12 +60,12 @@ class PPL(metric_base.MetricBase):
                 # Interpolate in W or Z.
                 if self.space == 'w':
                     dlat_t01 = Gs_clone.components.mapping.get_output_for(lat_t01, None, is_validation=True)
-                    dlat_t0, dlat_t1 = dlat_t01[0::2], dlat_t01[1::2]
+                    dlat_t0, dlat_t1 = dlat_t01[::2], dlat_t01[1::2]
                     dlat_e0 = tflib.lerp(dlat_t0, dlat_t1, lerp_t[:, np.newaxis, np.newaxis])
                     dlat_e1 = tflib.lerp(dlat_t0, dlat_t1, lerp_t[:, np.newaxis, np.newaxis] + self.epsilon)
                     dlat_e01 = tf.reshape(tf.stack([dlat_e0, dlat_e1], axis=1), dlat_t01.shape)
                 else: # space == 'z'
-                    lat_t0, lat_t1 = lat_t01[0::2], lat_t01[1::2]
+                    lat_t0, lat_t1 = lat_t01[::2], lat_t01[1::2]
                     lat_e0 = slerp(lat_t0, lat_t1, lerp_t[:, np.newaxis])
                     lat_e1 = slerp(lat_t0, lat_t1, lerp_t[:, np.newaxis] + self.epsilon)
                     lat_e01 = tf.reshape(tf.stack([lat_e0, lat_e1], axis=1), lat_t01.shape)
@@ -89,7 +89,7 @@ class PPL(metric_base.MetricBase):
                 images = (images + 1) * (255 / 2)
 
                 # Evaluate perceptual distance.
-                img_e0, img_e1 = images[0::2], images[1::2]
+                img_e0, img_e1 = images[::2], images[1::2]
                 distance_measure = misc.load_pkl('https://drive.google.com/uc?id=1N2-m9qszOeVC9Tq77WxsLnuWwOedQiD2') # vgg16_zhang_perceptual.pkl
                 distance_expr.append(distance_measure.get_output_for(img_e0, img_e1) * (1 / self.epsilon**2))
 

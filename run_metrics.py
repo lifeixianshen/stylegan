@@ -20,7 +20,9 @@ from training import misc
 def run_pickle(submit_config, metric_args, network_pkl, dataset_args, mirror_augment):
     ctx = dnnlib.RunContext(submit_config)
     tflib.init_tf()
-    print('Evaluating %s metric on network_pkl "%s"...' % (metric_args.name, network_pkl))
+    print(
+        f'Evaluating {metric_args.name} metric on network_pkl "{network_pkl}"...'
+    )
     metric = dnnlib.util.call_func_by_name(**metric_args)
     print()
     metric.run(network_pkl, dataset_args=dataset_args, mirror_augment=mirror_augment, num_gpus=submit_config.num_gpus)
@@ -32,7 +34,9 @@ def run_pickle(submit_config, metric_args, network_pkl, dataset_args, mirror_aug
 def run_snapshot(submit_config, metric_args, run_id, snapshot):
     ctx = dnnlib.RunContext(submit_config)
     tflib.init_tf()
-    print('Evaluating %s metric on run_id %s, snapshot %s...' % (metric_args.name, run_id, snapshot))
+    print(
+        f'Evaluating {metric_args.name} metric on run_id {run_id}, snapshot {snapshot}...'
+    )
     run_dir = misc.locate_run_dir(run_id)
     network_pkl = misc.locate_network_pkl(run_dir, snapshot)
     metric = dnnlib.util.call_func_by_name(**metric_args)
@@ -46,7 +50,9 @@ def run_snapshot(submit_config, metric_args, run_id, snapshot):
 def run_all_snapshots(submit_config, metric_args, run_id):
     ctx = dnnlib.RunContext(submit_config)
     tflib.init_tf()
-    print('Evaluating %s metric on all snapshots of run_id %s...' % (metric_args.name, run_id))
+    print(
+        f'Evaluating {metric_args.name} metric on all snapshots of run_id {run_id}...'
+    )
     run_dir = misc.locate_run_dir(run_id)
     network_pkls = misc.list_network_pkls(run_dir)
     metric = dnnlib.util.call_func_by_name(**metric_args)
@@ -89,11 +95,11 @@ def main():
     submit_config.run_dir_ignore += config.run_dir_ignore
     for task in tasks:
         for metric in metrics:
-            submit_config.run_desc = '%s-%s' % (task.run_func_name, metric.name)
+            submit_config.run_desc = f'{task.run_func_name}-{metric.name}'
             if task.run_func_name.endswith('run_snapshot'):
-                submit_config.run_desc += '-%s-%s' % (task.run_id, task.snapshot)
+                submit_config.run_desc += f'-{task.run_id}-{task.snapshot}'
             if task.run_func_name.endswith('run_all_snapshots'):
-                submit_config.run_desc += '-%s' % task.run_id
+                submit_config.run_desc += f'-{task.run_id}'
             submit_config.run_desc += '-%dgpu' % submit_config.num_gpus
             dnnlib.submit_run(submit_config, metric_args=metric, **task)
 
